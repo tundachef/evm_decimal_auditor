@@ -2,6 +2,8 @@
 
 import { findDivBeforeMul, findMissingDivAfterMul, findDoubleMulNoDescale, findRoundingLossInDiv, findExternalTokenNoScaling } from "../matchers";
 
+// ts-node matchers.spec.ts >> output.log 2>&1
+
 function fakeOp(name: string, pc: number, pushData?: string) {
     return {
         name,
