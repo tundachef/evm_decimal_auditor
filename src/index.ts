@@ -21,7 +21,7 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
 
     const results = {
         contract: address,
-        issues: [] as { type: string; pc: number; context: string[] }[]
+        issues: [] as { type: string; pc: number; context: string[]; severity: string }[]
     };
 
     const context = (index: number) =>
@@ -30,11 +30,10 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
     const collect = (type: string, pcs: number[]) => {
         for (const pc of pcs) {
             const i = opcodes.findIndex(op => op.pc === pc);
-            results.issues.push({
-                type,
-                pc,
-                context: context(i)
-            });
+            let severity = "low";
+            if (type === "Missing DIV after MUL" || type === "Double MUL without descaling") severity = "high";
+            else if (type === "DIV before MUL" || type === "External token no scaling") severity = "medium";
+            results.issues.push({ type, pc, context: context(i), severity });
         }
     };
 
