@@ -68,6 +68,8 @@ web_modules/
 
 cache/
 
+src/audits/*.json
+
 # Output of 'npm pack'
 *.tgz
 
