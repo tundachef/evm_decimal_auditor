@@ -25,6 +25,7 @@ export async function disassembleContract(address: string) {
     console.log("\n== EVENTS ==");
     console.log(events);
 
+    // console.log(opcodes);
     return opcodes;
 }
 

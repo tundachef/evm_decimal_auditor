@@ -1,18 +1,23 @@
-// tests/matchers.spec.ts
-
-import { findDivBeforeMul, findMissingDivAfterMul, findDoubleMulNoDescale, findRoundingLossInDiv, findExternalTokenNoScaling } from "../src/matchers";
+import {
+    findDivBeforeMul,
+    findMissingDivAfterMul,
+    findDoubleMulNoDescale,
+    findRoundingLossInDiv,
+    findExternalTokenNoScaling,
+    findMulWithoutNearbyDiv,
+    findMulWithScaleButNoDivAfter
+} from "../src/matchers";
 
 // ts-node matchers.spec.ts >> output.log 2>&1
 
-function fakeOp(name: string, pc: number, pushData?: string) {
+function fakeOp(name: string, pc: number, pushDataHex?: string) {
     return {
         name,
         pc,
-        pushData: pushData ? Buffer.from(pushData, 'hex') : undefined
+        pushData: pushDataHex ? Buffer.from(pushDataHex, "hex") : undefined
     };
 }
 
-// Test sequences for each matcher
 const tests = {
     divBeforeMul: {
         vulnerable: [fakeOp("DIV", 0), fakeOp("PUSH1", 1), fakeOp("MUL", 2)],
@@ -36,6 +41,24 @@ const tests = {
             fakeOp("CALL", 0),
             fakeOp("CALLDATALOAD", 1),
             fakeOp("PUSH32", 2, "de0b6b3a7640000"),
+            fakeOp("DIV", 3)
+        ]
+    },
+    mulWithoutNearbyDiv: {
+        vulnerable: [fakeOp("PUSH1", 0), fakeOp("MUL", 1), fakeOp("ADD", 2)],
+        safe: [fakeOp("PUSH1", 0), fakeOp("MUL", 1), fakeOp("DIV", 2)]
+    },
+    mulWithScaleButNoDiv: {
+        vulnerable: [
+            fakeOp("PUSH32", 0, "0de0b6b3a7640000"), // 1e18
+            fakeOp("PUSH1", 1),
+            fakeOp("MUL", 2),
+            fakeOp("ADD", 3)
+        ],
+        safe: [
+            fakeOp("PUSH32", 0, "0de0b6b3a7640000"), // 1e18
+            fakeOp("PUSH1", 1),
+            fakeOp("MUL", 2),
             fakeOp("DIV", 3)
         ]
     }
@@ -62,3 +85,11 @@ console.log("  safe:", findRoundingLossInDiv(tests.roundingLossInDiv.safe));
 console.log("\nExternal token no scaling:");
 console.log("  vulnerable:", findExternalTokenNoScaling(tests.externalTokenNoScaling.vulnerable));
 console.log("  safe:", findExternalTokenNoScaling(tests.externalTokenNoScaling.safe));
+
+console.log("\nMUL with no nearby DIV:");
+console.log("  vulnerable:", findMulWithoutNearbyDiv(tests.mulWithoutNearbyDiv.vulnerable));
+console.log("  safe:", findMulWithoutNearbyDiv(tests.mulWithoutNearbyDiv.safe));
+
+console.log("\nMUL with scale constant but no DIV:");
+console.log("  vulnerable:", findMulWithScaleButNoDivAfter(tests.mulWithScaleButNoDiv.vulnerable));
+console.log("  safe:", findMulWithScaleButNoDivAfter(tests.mulWithScaleButNoDiv.safe));

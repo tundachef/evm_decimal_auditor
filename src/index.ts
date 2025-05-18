@@ -5,10 +5,13 @@ import {
     findDoubleMulNoDescale,
     findRoundingLossInDiv,
     findExternalTokenNoScaling,
-    findMulWithoutNearbyDiv // ✅ NEW
+    findMulWithoutNearbyDiv,
+    findMulWithScaleButNoDivAfter // ✅ NEW
 } from "./matchers";
 import { disassembleContract } from "./utils/disassemble";
 import fs from "fs";
+
+// ts-node index.ts 0x727ccbF8c2C57e577A85Bf682E3EE700970a56ed --json
 
 const [, , address, ...flags] = process.argv;
 const outputJson = flags.includes("--json");
@@ -39,7 +42,11 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
             let severity = "low";
             if (type === "Missing DIV after MUL" || type === "Double MUL without descaling") severity = "high";
             else if (type === "DIV before MUL" || type === "External token no scaling") severity = "medium";
-            else if (type === "MUL with no nearby DIV") severity = "critical"; // ✅ NEW
+            else if (
+                type === "MUL with no nearby DIV" ||
+                type === "MUL with scale constant but no DIV"
+            ) severity = "critical"; // ✅ NEW
+
             results.issues.push({ type, pc, context: context(i), severity });
         }
     };
@@ -49,7 +56,8 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
     collect("Double MUL without descaling", findDoubleMulNoDescale(opcodes));
     collect("Rounding loss in DIV", findRoundingLossInDiv(opcodes));
     collect("External token no scaling", findExternalTokenNoScaling(opcodes));
-    collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes)); // ✅ NEW
+    collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes));
+    collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes)); // ✅ NEW
 
     if (outputJson) {
         fs.mkdirSync("./audits", { recursive: true });
