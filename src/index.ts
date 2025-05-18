@@ -1,17 +1,5 @@
-import chalk from "chalk";
-import {
-    findDivBeforeMul,
-    findMissingDivAfterMul,
-    findDoubleMulNoDescale,
-    findRoundingLossInDiv,
-    findExternalTokenNoScaling,
-    findMulWithoutNearbyDiv,
-    findMulWithScaleButNoDivAfter
-} from "./matchers";
-import { disassembleContract } from "./utils/disassemble";
-import { sendEmail } from "./utils/email";
-import fs from "fs";
-import { getInterestingTokenAddresses } from "./eth-uniswap-latest-pairs";
+
+import { getEthInterestingTokenAddresses } from "./eth-uniswap-latest-pairs";
 import { runAudit } from "./runAudit";
 
 // ✅ Tracks audited tokens across cycles
@@ -20,7 +8,7 @@ const auditedTokens = new Set<string>();
 async function runScanner() {
     console.log(`\n⏱️  [${new Date().toISOString()}] Starting token audit loop...`);
 
-    const tokens = await getInterestingTokenAddresses(50);
+    const tokens = await getEthInterestingTokenAddresses(50);
     console.log(`✅ Retrieved ${tokens.length} candidate token addresses.`);
 
     let newAudits = 0;

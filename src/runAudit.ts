@@ -47,6 +47,7 @@ export async function runAudit(address: string, outputJson: boolean = true) {
         }
     };
 
+    // Run all matchers
     collect("DIV before MUL", findDivBeforeMul(opcodes));
     collect("Missing DIV after MUL", findMissingDivAfterMul(opcodes));
     collect("Double MUL without descaling", findDoubleMulNoDescale(opcodes));
@@ -55,19 +56,53 @@ export async function runAudit(address: string, outputJson: boolean = true) {
     collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes));
     collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes));
 
-    const criticalIssues = results.issues.filter(issue => issue.severity === "critical");
+    // Critical issues
+    const mulWithScaleIssues = results.issues.filter(
+        issue => issue.type === "MUL with scale constant but no DIV"
+    );
 
-    if (criticalIssues.length > 0) {
-        const subject = `Critical Audit Alert: ${address}`;
-        const text = criticalIssues.map(issue =>
+    if (mulWithScaleIssues.length > 0) {
+        const subject = `Critical: Scaling Error in ${address}`;
+        const text = mulWithScaleIssues.map(issue =>
             `[${issue.type}] at PC ${issue.pc}\nContext: ${issue.context.join(" ")}`
         ).join("\n\n");
 
         await sendEmail(subject, text);
     }
 
-    if (outputJson) {
+    // Other criticals (excluding mulWithScale)
+    const otherCriticals = results.issues.filter(
+        issue => issue.severity === "critical" && issue.type !== "MUL with scale constant but no DIV"
+    );
+
+    if (otherCriticals.length > 0) {
         fs.mkdirSync("./audits", { recursive: true });
+        const critLogPath = "./audits/critical-issues.json";
+
+        let prev = [];
+        if (fs.existsSync(critLogPath)) {
+            try {
+                prev = JSON.parse(fs.readFileSync(critLogPath, "utf-8"));
+            } catch { }
+        }
+
+        const entry = {
+            address,
+            count: otherCriticals.length,
+            issues: otherCriticals.map(issue => ({
+                type: issue.type,
+                pc: issue.pc,
+                context: issue.context
+            }))
+        };
+
+        prev.push(entry);
+        fs.writeFileSync(critLogPath, JSON.stringify(prev, null, 2));
+        console.log(chalk.red(`🔴 Logged ${otherCriticals.length} critical issues to ${critLogPath}`));
+    }
+
+    // Output full JSON audit if needed
+    if (outputJson) {
         const outputFile = `./audits/audit-${address}.json`;
         fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
         console.log(chalk.green(`✅ JSON audit saved to ${outputFile}`));

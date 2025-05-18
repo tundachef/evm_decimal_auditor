@@ -17,7 +17,11 @@ export function findMulWithScaleButNoDivAfter(
             TEN_POWERS.some(power => {
                 if (!op.pushData) return false;
                 const val = BigInt('0x' + op.pushData.toString('hex'));
-                return val === power;
+                const isMatch = val === power;
+                if (isMatch) {
+                    console.log(`📏 Found scaling MUL with 10^x: ${val} at PC ${op.pc} before MUL at PC ${opcode.pc}`);
+                }
+                return isMatch;
             })
         );
 

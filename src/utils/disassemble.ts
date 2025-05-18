@@ -19,11 +19,11 @@ export async function disassembleContract(address: string) {
     const events = evm.getEvents();
     const jumpDests = evm.getJumpDestinations();
 
-    console.log("\n== FUNCTIONS ==");
-    console.log(functions);
+    // console.log("\n== FUNCTIONS ==");
+    // console.log(functions);
 
-    console.log("\n== EVENTS ==");
-    console.log(events);
+    // console.log("\n== EVENTS ==");
+    // console.log(events);
 
     // console.log(opcodes);
     return opcodes;

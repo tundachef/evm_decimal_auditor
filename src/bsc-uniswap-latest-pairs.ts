@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 import { provider } from "./helpers/constants";
 
 
-const V2_FACTORY = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
+const V2_FACTORY = "0xBCfCcbde45cE874adCB698cC183deBcF17952812";
 const V2_FACTORY_ABI = [
     "function allPairsLength() external view returns (uint256)",
     "function allPairs(uint256) external view returns (address)"
@@ -19,12 +19,13 @@ const ERC20_ABI = [
     "function name() view returns (string)",
 ];
 
-const EXCLUDED_SYMBOLS = ["WETH", "USDC", "USDT", "DAI", "WBTC"];
+const EXCLUDED_SYMBOLS = ["WBNB", "USDT", "USDC", "BUSD", "ETH"];
+
 
 /**
  * Get unique token addresses from latest Uniswap V2 pairs, excluding known stable/major tokens
  */
-export async function getEthInterestingTokenAddresses(limitPairs = 100): Promise<string[]> {
+export async function getInterestingBscTokenAddresses(limitPairs = 100): Promise<string[]> {
     const factory = new ethers.Contract(V2_FACTORY, V2_FACTORY_ABI, provider);
     const total = await factory.allPairsLength();
 
@@ -60,7 +61,7 @@ export async function getEthInterestingTokenAddresses(limitPairs = 100): Promise
 }
 
 // (async () => {
-//     const tokens = await getEthInterestingTokenAddresses(10); // scan ~200 latest pairs
+//     const tokens = await getInterestingTokenAddresses(10); // scan ~200 latest pairs
 //     console.log(`✅ Unique non-excluded token addresses: ${tokens.length}`);
 //     console.dir(tokens, { maxArrayLength: null });
 // })();
