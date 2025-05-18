@@ -6,9 +6,10 @@ import {
     findRoundingLossInDiv,
     findExternalTokenNoScaling,
     findMulWithoutNearbyDiv,
-    findMulWithScaleButNoDivAfter // ✅ NEW
+    findMulWithScaleButNoDivAfter
 } from "./matchers";
 import { disassembleContract } from "./utils/disassemble";
+import { sendEmail } from "./utils/email"; // ✅ Make sure this path is correct
 import fs from "fs";
 
 // ts-node index.ts 0x727ccbF8c2C57e577A85Bf682E3EE700970a56ed --json
@@ -45,19 +46,32 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
             else if (
                 type === "MUL with no nearby DIV" ||
                 type === "MUL with scale constant but no DIV"
-            ) severity = "critical"; // ✅ NEW
+            ) severity = "critical";
 
             results.issues.push({ type, pc, context: context(i), severity });
         }
     };
 
+    // Collect issues
     collect("DIV before MUL", findDivBeforeMul(opcodes));
     collect("Missing DIV after MUL", findMissingDivAfterMul(opcodes));
     collect("Double MUL without descaling", findDoubleMulNoDescale(opcodes));
     collect("Rounding loss in DIV", findRoundingLossInDiv(opcodes));
     collect("External token no scaling", findExternalTokenNoScaling(opcodes));
     collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes));
-    collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes)); // ✅ NEW
+    collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes));
+
+    // ✅ Send email if critical issue found
+    const criticalIssues = results.issues.filter(issue => issue.severity === "critical");
+
+    if (criticalIssues.length > 0) {
+        const subject = `⚠️ Critical Audit Alert: ${address}`;
+        const text = criticalIssues.map(issue =>
+            `[${issue.type}] at PC ${issue.pc}\nContext: ${issue.context.join(" ")}`
+        ).join("\n\n");
+
+        await sendEmail(subject, text);
+    }
 
     if (outputJson) {
         fs.mkdirSync("./audits", { recursive: true });
