@@ -2,7 +2,7 @@
 import { EVM } from "evm";
 import { provider } from "../helpers/constants";
 
-// ts-node test.ts > out.log 2>&1
+// ts-node disassemble.ts > out.log 2>&1
 
 export async function disassembleContract(address: string) {
     const bytecode = await provider.getCode(address);
@@ -12,11 +12,20 @@ export async function disassembleContract(address: string) {
     }
 
     const evm = new EVM(bytecode);
-    const opcodes = evm.getOpcodes();
 
-    console.log("== OPCODES ==");
-    // console.log(opcodes);
+    // Fetch all available insights
+    const opcodes = evm.getOpcodes();
+    const functions = evm.getFunctions();
+    const events = evm.getEvents();
+    const jumpDests = evm.getJumpDestinations();
+
+    console.log("\n== FUNCTIONS ==");
+    console.log(functions);
+
+    console.log("\n== EVENTS ==");
+    console.log(events);
+
     return opcodes;
 }
 
-// disassembleContract("0x06012c8cf97BEaD5deAe237070F9587f8E7A266d"); // CryptoKitties
+// disassembleContract("0x727ccbF8c2C57e577A85Bf682E3EE700970a56ed"); // CryptoKitties

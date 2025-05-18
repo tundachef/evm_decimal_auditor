@@ -1,6 +1,6 @@
 // tests/matchers.spec.ts
 
-import { findDivBeforeMul, findMissingDivAfterMul, findDoubleMulNoDescale, findRoundingLossInDiv, findExternalTokenNoScaling } from "../matchers";
+import { findDivBeforeMul, findMissingDivAfterMul, findDoubleMulNoDescale, findRoundingLossInDiv, findExternalTokenNoScaling } from "../src/matchers";
 
 // ts-node matchers.spec.ts >> output.log 2>&1
 

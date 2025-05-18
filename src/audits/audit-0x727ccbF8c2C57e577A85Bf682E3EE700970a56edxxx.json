@@ -1,0 +1,183 @@
+{
+  "contract": "0x727ccbF8c2C57e577A85Bf682E3EE700970a56ed",
+  "issues": [
+    {
+      "type": "DIV before MUL",
+      "pc": 340,
+      "context": [
+        "PUSH1",
+        "PUSH1",
+        "MSTORE"
+      ],
+      "severity": "medium"
+    },
+    {
+      "type": "DIV before MUL",
+      "pc": 381,
+      "context": [
+        "JUMPDEST",
+        "PUSH1",
+        "MLOAD",
+        "DUP1",
+        "SWAP2",
+        "SUB",
+        "SWAP1"
+      ],
+      "severity": "medium"
+    },
+    {
+      "type": "DIV before MUL",
+      "pc": 552,
+      "context": [
+        "MSTORE",
+        "DUP1",
+        "SWAP3",
+        "SWAP2",
+        "SWAP1",
+        "DUP2",
+        "DUP2"
+      ],
+      "severity": "medium"
+    },
+    {
+      "type": "DIV before MUL",
+      "pc": 593,
+      "context": [
+        "DUP4",
+        "SLOAD",
+        "DIV",
+        "MUL",
+        "DUP4",
+        "MSTORE",
+        "SWAP2"
+      ],
+      "severity": "medium"
+    },
+    {
+      "type": "Missing DIV after MUL",
+      "pc": 537,
+      "context": [
+        "DUP1",
+        "SWAP2",
+        "DIV",
+        "MUL",
+        "PUSH1",
+        "ADD",
+        "PUSH1"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "Missing DIV after MUL",
+      "pc": 593,
+      "context": [
+        "DUP4",
+        "SLOAD",
+        "DIV",
+        "MUL",
+        "DUP4",
+        "MSTORE",
+        "SWAP2"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "Missing DIV after MUL",
+      "pc": 856,
+      "context": [
+        "DUP1",
+        "SWAP2",
+        "DIV",
+        "MUL",
+        "PUSH1",
+        "ADD",
+        "PUSH1"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "Missing DIV after MUL",
+      "pc": 912,
+      "context": [
+        "DUP4",
+        "SLOAD",
+        "DIV",
+        "MUL",
+        "DUP4",
+        "MSTORE",
+        "SWAP2"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "Rounding loss in DIV",
+      "pc": 536,
+      "context": [
+        "PUSH1",
+        "DUP1",
+        "SWAP2",
+        "DIV",
+        "MUL",
+        "PUSH1",
+        "ADD"
+      ],
+      "severity": "low"
+    },
+    {
+      "type": "Rounding loss in DIV",
+      "pc": 592,
+      "context": [
+        "DUP1",
+        "DUP4",
+        "SLOAD",
+        "DIV",
+        "MUL",
+        "DUP4",
+        "MSTORE"
+      ],
+      "severity": "low"
+    },
+    {
+      "type": "Rounding loss in DIV",
+      "pc": 855,
+      "context": [
+        "PUSH1",
+        "DUP1",
+        "SWAP2",
+        "DIV",
+        "MUL",
+        "PUSH1",
+        "ADD"
+      ],
+      "severity": "low"
+    },
+    {
+      "type": "Rounding loss in DIV",
+      "pc": 911,
+      "context": [
+        "DUP1",
+        "DUP4",
+        "SLOAD",
+        "DIV",
+        "MUL",
+        "DUP4",
+        "MSTORE"
+      ],
+      "severity": "low"
+    },
+    {
+      "type": "Rounding loss in DIV",
+      "pc": 3377,
+      "context": [
+        "PUSH1",
+        "PUSH1",
+        "DUP3",
+        "DIV",
+        "SWAP1",
+        "POP",
+        "PUSH1"
+      ],
+      "severity": "low"
+    }
+  ]
+}

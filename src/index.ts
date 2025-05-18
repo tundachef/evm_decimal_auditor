@@ -1,6 +1,12 @@
-
 import chalk from "chalk";
-import { findDivBeforeMul, findMissingDivAfterMul, findDoubleMulNoDescale, findRoundingLossInDiv, findExternalTokenNoScaling } from "./matchers";
+import {
+    findDivBeforeMul,
+    findMissingDivAfterMul,
+    findDoubleMulNoDescale,
+    findRoundingLossInDiv,
+    findExternalTokenNoScaling,
+    findMulWithoutNearbyDiv // ✅ NEW
+} from "./matchers";
 import { disassembleContract } from "./utils/disassemble";
 import fs from "fs";
 
@@ -33,6 +39,7 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
             let severity = "low";
             if (type === "Missing DIV after MUL" || type === "Double MUL without descaling") severity = "high";
             else if (type === "DIV before MUL" || type === "External token no scaling") severity = "medium";
+            else if (type === "MUL with no nearby DIV") severity = "critical"; // ✅ NEW
             results.issues.push({ type, pc, context: context(i), severity });
         }
     };
@@ -42,9 +49,9 @@ if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
     collect("Double MUL without descaling", findDoubleMulNoDescale(opcodes));
     collect("Rounding loss in DIV", findRoundingLossInDiv(opcodes));
     collect("External token no scaling", findExternalTokenNoScaling(opcodes));
+    collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes)); // ✅ NEW
 
     if (outputJson) {
-        // output file path now inside 'audits' folder
         fs.mkdirSync("./audits", { recursive: true });
         const outputFile = `./audits/audit-${address}.json`;
         fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
