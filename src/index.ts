@@ -8,7 +8,7 @@ const auditedTokens = new Set<string>();
 async function runScanner() {
     console.log(`\n⏱️  [${new Date().toISOString()}] Starting token audit loop...`);
 
-    const tokens = await getEthInterestingTokenAddresses(50);
+    const tokens = await getEthInterestingTokenAddresses(500);
     console.log(`✅ Retrieved ${tokens.length} candidate token addresses.`);
 
     let newAudits = 0;
@@ -20,6 +20,7 @@ async function runScanner() {
             console.log(`⏭️  Skipping already audited: ${tokenLower}`);
             continue;
         }
+        await new Promise(res => setTimeout(res, 5000));
 
         try {
             console.log(`🔍 Auditing token: ${tokenLower}`);

@@ -7,7 +7,8 @@ import {
     findRoundingLossInDiv,
     findExternalTokenNoScaling,
     findMulWithoutNearbyDiv,
-    findMulWithScaleButNoDivAfter
+    findMulWithScaleButNoDivAfter,
+    findPriceFetchingPatterns
 } from "./matchers";
 import { disassembleContract } from "./utils/disassemble";
 import { sendEmail } from "./utils/email";
@@ -36,12 +37,9 @@ export async function runAudit(address: string, outputJson: boolean = true) {
         for (const pc of pcs) {
             const i = opcodes.findIndex(op => op.pc === pc);
             let severity = "low";
-            if (type === "Missing DIV after MUL" || type === "Double MUL without descaling") severity = "high";
+
+            if (type === "Price fetch pattern") severity = "critical";
             else if (type === "DIV before MUL" || type === "External token no scaling") severity = "medium";
-            else if (
-                type === "MUL with no nearby DIV" ||
-                type === "MUL with scale constant but no DIV"
-            ) severity = "critical";
 
             results.issues.push({ type, pc, context: context(i), severity });
         }
@@ -55,27 +53,19 @@ export async function runAudit(address: string, outputJson: boolean = true) {
     collect("External token no scaling", findExternalTokenNoScaling(opcodes));
     collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes));
     collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes));
+    collect("Price fetch pattern", findPriceFetchingPatterns(opcodes)); // Only this is critical
 
-    // Critical issues
-    const mulWithScaleIssues = results.issues.filter(
-        issue => issue.type === "MUL with scale constant but no DIV"
-    );
+    // Send email if critical price-fetch pattern is found
+    const criticalFinds = results.issues.filter(issue => issue.type === "Price fetch pattern");
 
-    if (mulWithScaleIssues.length > 0) {
-        const subject = `Critical: Scaling Error in ${address}`;
-        const text = mulWithScaleIssues.map(issue =>
+    if (criticalFinds.length > 0) {
+        const subject = `Critical: Price Fetch Detected in ${address}`;
+        const text = criticalFinds.map(issue =>
             `[${issue.type}] at PC ${issue.pc}\nContext: ${issue.context.join(" ")}`
         ).join("\n\n");
 
         await sendEmail(subject, text);
-    }
 
-    // Other criticals (excluding mulWithScale)
-    const otherCriticals = results.issues.filter(
-        issue => issue.severity === "critical" && issue.type !== "MUL with scale constant but no DIV"
-    );
-
-    if (otherCriticals.length > 0) {
         fs.mkdirSync("./audits", { recursive: true });
         const critLogPath = "./audits/critical-issues.json";
 
@@ -88,8 +78,8 @@ export async function runAudit(address: string, outputJson: boolean = true) {
 
         const entry = {
             address,
-            count: otherCriticals.length,
-            issues: otherCriticals.map(issue => ({
+            count: criticalFinds.length,
+            issues: criticalFinds.map(issue => ({
                 type: issue.type,
                 pc: issue.pc,
                 context: issue.context
@@ -98,7 +88,7 @@ export async function runAudit(address: string, outputJson: boolean = true) {
 
         prev.push(entry);
         fs.writeFileSync(critLogPath, JSON.stringify(prev, null, 2));
-        console.log(chalk.red(`🔴 Logged ${otherCriticals.length} critical issues to ${critLogPath}`));
+        console.log(chalk.red(`🔴 Logged ${criticalFinds.length} critical price fetch issues to ${critLogPath}`));
     }
 
     // Output full JSON audit if needed

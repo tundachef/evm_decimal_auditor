@@ -4,4 +4,5 @@ export * from "./roundingLossInDiv";
 export * from "./doubleMulNoDescale";
 export * from "./divBeforeMul";
 export * from "./findMulWithoutNearbyDiv";
-export * from "./findMulWithScaleButNoDivAfter"; // ✅ NEW
+export * from "./findMulWithScaleButNoDivAfter";
+export * from "./findPriceFetchingPatterns";
