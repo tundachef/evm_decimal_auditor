@@ -6,3 +6,4 @@ export * from "./divBeforeMul";
 export * from "./findMulWithoutNearbyDiv";
 export * from "./findMulWithScaleButNoDivAfter";
 export * from "./findPriceFetchingPatterns";
+export * from "./pricefetch";

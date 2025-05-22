@@ -2,13 +2,16 @@
 import { getEthInterestingTokenAddresses } from "./eth-uniswap-latest-pairs";
 import { runAudit } from "./runAudit";
 
+
+// ts-node index.ts > out.log 2>&1
+
 // ✅ Tracks audited tokens across cycles
 const auditedTokens = new Set<string>();
 
 async function runScanner() {
     console.log(`\n⏱️  [${new Date().toISOString()}] Starting token audit loop...`);
 
-    const tokens = await getEthInterestingTokenAddresses(500);
+    const tokens = await getEthInterestingTokenAddresses(100);
     console.log(`✅ Retrieved ${tokens.length} candidate token addresses.`);
 
     let newAudits = 0;
@@ -39,4 +42,4 @@ async function runScanner() {
 runScanner();
 
 // Repeat every 30 minutes
-setInterval(runScanner, 30 * 60 * 1000);
+setInterval(runScanner, 1 * 60 * 1000);

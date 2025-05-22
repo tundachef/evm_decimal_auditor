@@ -8,7 +8,20 @@ import {
     findExternalTokenNoScaling,
     findMulWithoutNearbyDiv,
     findMulWithScaleButNoDivAfter,
-    findPriceFetchingPatterns
+    findPriceFetchingPatterns,
+    findPriceFetchOpcodes,
+    findDoubleScalingAfterPriceFetch,
+    findNoScalingAfterPriceFetch,
+    findTruncatingIntegerDivision,
+    findInvertedPriceMath,
+    findUncheckedOracleCall,
+    findNoFreshnessCheck,
+    findNoAnsweredInRoundCheck,
+    findNoSanityBoundsOnPrice,
+    findWrongMathOrder,
+    findSpotPriceFromUniswapPair,
+    findGetAmountsOutAbuse,
+    findLPBasedFakePricePath
 } from "./matchers";
 import { disassembleContract } from "./utils/disassemble";
 import { sendEmail } from "./utils/email";
@@ -33,65 +46,87 @@ export async function runAudit(address: string, outputJson: boolean = true) {
     const context = (index: number) =>
         opcodes.slice(Math.max(0, index - 3), index + 4).map(op => op.name);
 
-    const collect = (type: string, pcs: number[]) => {
+    const collect = (type: string, pcs: number[], severity: string = "low") => {
         for (const pc of pcs) {
             const i = opcodes.findIndex(op => op.pc === pc);
-            let severity = "low";
-
-            if (type === "Price fetch pattern") severity = "critical";
-            else if (type === "DIV before MUL" || type === "External token no scaling") severity = "medium";
-
             results.issues.push({ type, pc, context: context(i), severity });
         }
     };
 
-    // Run all matchers
-    collect("DIV before MUL", findDivBeforeMul(opcodes));
-    collect("Missing DIV after MUL", findMissingDivAfterMul(opcodes));
-    collect("Double MUL without descaling", findDoubleMulNoDescale(opcodes));
-    collect("Rounding loss in DIV", findRoundingLossInDiv(opcodes));
-    collect("External token no scaling", findExternalTokenNoScaling(opcodes));
-    collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes));
-    collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes));
-    collect("Price fetch pattern", findPriceFetchingPatterns(opcodes)); // Only this is critical
+    // === General matchers ===
+    collect("DIV before MUL", findDivBeforeMul(opcodes), "medium");
+    collect("Missing DIV after MUL", findMissingDivAfterMul(opcodes), "high");
+    collect("Double MUL without descaling", findDoubleMulNoDescale(opcodes), "high");
+    collect("Rounding loss in DIV", findRoundingLossInDiv(opcodes), "low");
+    collect("External token no scaling", findExternalTokenNoScaling(opcodes), "medium");
+    collect("MUL with no nearby DIV", findMulWithoutNearbyDiv(opcodes), "critical");
+    collect("MUL with scale constant but no DIV", findMulWithScaleButNoDivAfter(opcodes), "critical");
+    collect("Price fetch pattern", findPriceFetchingPatterns(opcodes), "critical");
 
-    // Send email if critical price-fetch pattern is found
-    const criticalFinds = results.issues.filter(issue => issue.type === "Price fetch pattern");
+    // === Advanced matchers (only after finding fetch) ===
+    const fetchPCs = findPriceFetchOpcodes(opcodes);
+    if (fetchPCs.length > 0) {
+        collect("Double scaling after price fetch", findDoubleScalingAfterPriceFetch(opcodes, fetchPCs), "exploit");
+        collect("No scaling after price fetch", findNoScalingAfterPriceFetch(opcodes, fetchPCs), "exploit");
+        collect("Truncating integer division", findTruncatingIntegerDivision(opcodes), "exploit");
+        collect("Inverted price math", findInvertedPriceMath(opcodes), "exploit");
+        collect("Unchecked oracle call", findUncheckedOracleCall(opcodes), "exploit");
+        collect("No freshness check", findNoFreshnessCheck(opcodes), "exploit");
+        collect("No answeredInRound check", findNoAnsweredInRoundCheck(opcodes), "exploit");
+        collect("No sanity bounds on price", findNoSanityBoundsOnPrice(opcodes), "exploit");
+        collect("Wrong math order", findWrongMathOrder(opcodes), "exploit");
+        collect("Spot price from Uniswap", findSpotPriceFromUniswapPair(opcodes), "exploit");
+        collect("getAmountsOut abuse", findGetAmountsOutAbuse(opcodes), "exploit");
+        collect("LP-based fake price path", findLPBasedFakePricePath(opcodes), "exploit");
+    } else {
+        console.log(chalk.green("✅ No price fetch logic detected — advanced matchers skipped."));
+    }
 
-    if (criticalFinds.length > 0) {
-        const subject = `Critical: Price Fetch Detected in ${address}`;
-        const text = criticalFinds.map(issue =>
+    const exploitFinds = results.issues.filter(issue => issue.severity === "exploit");
+
+    if (exploitFinds.length > 0) {
+        const subject = `🚨 Exploit Risk Detected in ${address}`;
+        const text = exploitFinds.map(issue =>
             `[${issue.type}] at PC ${issue.pc}\nContext: ${issue.context.join(" ")}`
         ).join("\n\n");
 
-        await sendEmail(subject, text);
+        try {
+            await sendEmail(subject, text);
+            console.log(chalk.blue(`📧 Exploit alert email sent for ${address}`));
+        } catch (err) {
+            console.error(chalk.red(`❌ Failed to send email: ${err}`));
+        }
 
-        fs.mkdirSync("./audits", { recursive: true });
-        const critLogPath = "./audits/critical-issues.json";
+        const exploitLogPath = "./audits/exploit-issues.json";
+        let previous = [];
 
-        let prev = [];
-        if (fs.existsSync(critLogPath)) {
-            try {
-                prev = JSON.parse(fs.readFileSync(critLogPath, "utf-8"));
-            } catch { }
+        try {
+            if (fs.existsSync(exploitLogPath)) {
+                previous = JSON.parse(fs.readFileSync(exploitLogPath, "utf-8"));
+            }
+        } catch (err) {
+            console.error(chalk.red("❌ Failed to read existing exploit log."), err);
         }
 
         const entry = {
             address,
-            count: criticalFinds.length,
-            issues: criticalFinds.map(issue => ({
+            count: exploitFinds.length,
+            issues: exploitFinds.map(issue => ({
                 type: issue.type,
                 pc: issue.pc,
                 context: issue.context
             }))
         };
 
-        prev.push(entry);
-        fs.writeFileSync(critLogPath, JSON.stringify(prev, null, 2));
-        console.log(chalk.red(`🔴 Logged ${criticalFinds.length} critical price fetch issues to ${critLogPath}`));
+        try {
+            previous.push(entry);
+            fs.writeFileSync(exploitLogPath, JSON.stringify(previous, null, 2));
+            console.log(chalk.red(`🔴 Logged ${exploitFinds.length} exploit-level issues to ${exploitLogPath}`));
+        } catch (err) {
+            console.error(chalk.red("❌ Failed to write exploit issues to log file."), err);
+        }
     }
 
-    // Output full JSON audit if needed
     if (outputJson) {
         const outputFile = `./audits/audit-${address}.json`;
         fs.writeFileSync(outputFile, JSON.stringify(results, null, 2));
